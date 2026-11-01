@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Each player can read and write only their own profile and cars.
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.credits is int
+        && request.resource.data.credits >= 0
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 14;
+      allow delete: if false;
+
+      match /cars/{carId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && carId in ['kite','ridge','dhaka','metro','volt','reight','bull','phantom'];
+        allow delete: if false;
+      }
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
