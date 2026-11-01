@@ -333,7 +333,7 @@ const showScene=new THREE.Scene();
 showScene.background=C(0x0a0b0d);
 const showCam=new THREE.PerspectiveCamera(32,1,.5,200);
 const turn=new THREE.Group();showScene.add(turn);
-let showCar=null,drag=null,offY=.08;
+let showCar=null,drag=null,offY=.08,offX=0,offXt=0;
 (function buildShowroom(){
   const env=new THREE.Group();
   const wallTex=ctex(8,256,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#07080a');gr.addColorStop(.55,'#1b1e23');gr.addColorStop(1,'#111317');g.fillStyle=gr;g.fillRect(0,0,w,h);});
@@ -759,11 +759,11 @@ function enableTilt(){
   const D=window.DeviceOrientationEvent;
   const start=()=>{
     tiltOn=true;addEventListener('deviceorientation',onTilt);
-    setTimeout(()=>{if(!tiltSeen)toast('No motion data. Motion sensors are blocked in this view. Open the game link directly in Safari or Chrome.');},2200);
+    setTimeout(()=>{if(!tiltSeen){if(S.steer==='tilt'){S.steer='wheel';save();applyTouchUI();}toast('No motion data here, so controls went back to the steering wheel. Tilt works when you open the game link directly in Safari or Chrome.');}else toast('Controls: Tilt phone');},2200);
   };
-  if(!D){toast('This device has no motion sensor. Use Wheel or L / R.');return;}
+  if(!D){S.steer='wheel';save();applyTouchUI();toast('This device has no motion sensor. Using the steering wheel.');return;}
   if(typeof D.requestPermission==='function'){
-    D.requestPermission().then(r=>{if(r==='granted')start();else toast('Motion access was denied. On iPhone: Settings > Safari > Motion & Orientation Access.');}).catch(()=>toast('Could not ask for motion access. Tap Tilt again.'));
+    D.requestPermission().then(r=>{if(r==='granted')start();else{S.steer='wheel';save();applyTouchUI();toast('Motion access was denied, so the steering wheel is on. On iPhone: Settings > Safari > Motion & Orientation Access.');}}).catch(()=>toast('Could not ask for motion access. Tap Tilt again.'));
   }else start();
 }
 
@@ -878,7 +878,7 @@ function updateCoins(t,collect){
 function rankNow(){const ps=R.prog*DS;let r=1;for(let k=0;k<ais.length;k++)if(ais[k].s>ps)r++;return r;}
 
 function startRace(){
-  audioInit();toggleProfile(false);
+  audioInit();toggleProfile(false);toggleStation(false);
   buildRace();
   if(raceCar){raceScene.remove(raceCar.root);}
   const g=garageOf(S.sel);
@@ -1034,6 +1034,7 @@ function setupMenu(){
 function toggleProfile(force){
   const p=$('profilePanel'),open=force!==undefined?force:p.hidden;
   p.hidden=!open;$('bProfile').setAttribute('aria-expanded',open?'true':'false');
+  if(open&&!$('stationPanel').hidden)toggleStation(false);
 }
 $('bProfile').addEventListener('click',()=>{click();toggleProfile();});
 addEventListener('pointerdown',e=>{const p=$('profilePanel');if(!p.hidden&&!p.contains(e.target)&&!$('bProfile').contains(e.target))toggleProfile(false);});
@@ -1092,6 +1093,12 @@ function renderBuy(){
   else{b.textContent='Buy '+fmtC(c.price);b.disabled=false;}
 }
 function renderAll(){renderProfile();renderCustom();renderDealer();setupMenu();}
+function toggleStation(force){
+  const p=$('stationPanel'),open=force!==undefined?force:p.hidden;
+  p.hidden=!open;$('bStation').setAttribute('aria-expanded',open?'true':'false');
+  offXt=open?.17:0;
+  if(open){toggleProfile(false);if(!$('bodyDealer').hidden)makeThumbs();}
+}
 function switchTab(t){
   const dealer=t==='dealer';
   $('tabCustom').classList.toggle('on',!dealer);$('tabDealer').classList.toggle('on',dealer);
@@ -1102,8 +1109,11 @@ function switchTab(t){
 }
 $('tabCustom').addEventListener('click',()=>{click();switchTab('custom');});
 $('tabDealer').addEventListener('click',()=>{click();switchTab('dealer');});
-$('bGarage').addEventListener('click',()=>{click();switchTab('custom');});
-$('bDealer').addEventListener('click',()=>{click();switchTab('dealer');});
+$('bGarage').addEventListener('click',()=>{click();switchTab('custom');toggleStation(true);});
+$('bDealer').addEventListener('click',()=>{click();switchTab('dealer');toggleStation(true);});
+$('bStation').addEventListener('click',()=>{click();toggleStation();});
+$('bStClose').addEventListener('click',()=>{click();toggleStation(false);});
+addEventListener('pointerdown',e=>{const p=$('stationPanel');if(!p.hidden&&!p.contains(e.target)&&!$('bStation').contains(e.target)&&!e.target.closest('.row3')&&e.target.closest('#menu'))toggleStation(false);});
 
 function spend(price){
   if(S.credits<price){toast('Not enough credits. You need '+fmtC(price-S.credits)+' more. Win races to earn credits.');return false;}
@@ -1154,20 +1164,34 @@ function bindSeg(id,get,set){
   [].forEach.call(el.children,b=>b.addEventListener('click',()=>{set(b.dataset.v);save();paint();click();}));
   paint();return paint;
 }
+let pendSteer=S.steer;
+const cpBtns=[].slice.call(document.querySelectorAll('#ctlPick .cp'));
+const CTL_NOTE={wheel:'Drag the on-screen wheel with your left thumb. Gas and brake are on the right.',buttons:'Two big arrow buttons appear on the left. Gas and brake are on the right.',tilt:'Hold the phone in landscape, upright. Tilt right to turn right, left to turn left. Needs motion access (works on the hosted game link).'};
+function paintPick(){cpBtns.forEach(b=>{const on=b.dataset.v===pendSteer;b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');});$('ctlNote').textContent=CTL_NOTE[pendSteer];}
+cpBtns.forEach(b=>b.addEventListener('click',()=>{pendSteer=b.dataset.v;paintPick();click();}));
 const paintSettings=[
   bindSeg('segSound',()=>S.sound?'1':'0',v=>{S.sound=v==='1';setMaster();}),
   bindSeg('segQ',()=>S.quality,v=>{S.quality=v;applyQuality();}),
   bindSeg('segU',()=>S.units,v=>{S.units=v;setHud();lastSpd=-1;}),
   bindSeg('segT',()=>S.touch?'1':'0',v=>{S.touch=v==='1';applyTouchUI();}),
-  bindSeg('segS',()=>S.steer,v=>{S.steer=v;applyTouchUI();if(v==='tilt')enableTilt();}),
+  ()=>{pendSteer=S.steer;paintPick();},
   bindSeg('segF',()=>S.flip?'1':'0',v=>{S.flip=v==='1';layoutStage();})
 ];
 $('sens').value=S.sens;$('sensVal').textContent=S.sens+'%';
 $('sens').addEventListener('input',e=>{S.sens=+e.target.value;$('sensVal').textContent=S.sens+'%';save();});
 if(CFG.demo){$('bDemo').hidden=false;$('bDemo').addEventListener('click',()=>{S.credits+=10000;save();renderProfile();toast('+10,000 test credits added');click();});}
 $('bSettings').addEventListener('click',()=>{click();R.mode='settings';paintSettings.forEach(f=>f());showOnly(['settings']);});
-$('sDone').addEventListener('click',()=>{click();R.mode='menu';showOnly(['menu']);});
-$('bPlay').addEventListener('click',()=>{audioInit();click();startRace();});
+const STEER_NAME={wheel:'Steering wheel',buttons:'Arrow buttons',tilt:'Tilt phone'};
+$('sDone').addEventListener('click',()=>{
+  click();S.steer=pendSteer;save();applyTouchUI();
+  if(S.steer==='tilt')enableTilt();else toast('Controls: '+STEER_NAME[S.steer]);
+  R.mode='menu';showOnly(['menu']);
+});
+function withLoading(label,fn){
+  const L=$('loading');$('loadTxt').textContent=label;L.hidden=false;L.classList.remove('out','run');void L.offsetWidth;L.classList.add('run');
+  setTimeout(()=>{try{fn();}finally{setTimeout(()=>{L.classList.add('out');setTimeout(()=>{L.hidden=true;},420);},650);}},90);
+}
+$('bPlay').addEventListener('click',()=>{audioInit();click();withLoading('Getting the track ready',startRace);});
 $('bPause').addEventListener('click',pauseRace);
 $('bReset').addEventListener('click',()=>{if(R.mode==='race'||R.mode==='countdown')recoverCar();});
 $('pResume').addEventListener('click',resumeRace);
@@ -1270,7 +1294,7 @@ function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   if(SHOW(R.mode)){
     if(!drag)turn.rotation.y+=dt*.35;
-    showCam.setViewOffset(W,H,Math.round(W*.05),Math.round(H*offY),W,H);
+    offX+=(offXt-offX)*Math.min(1,dt*8);showCam.setViewOffset(W,H,Math.round(W*offX),Math.round(H*offY),W,H);
     renderer.render(showScene,showCam);
   }else{
     if(R.mode!=='paused')updateRace(dt);
@@ -1282,4 +1306,5 @@ applyTouchUI();applyQuality();rebuildShowCar();renderAll();setHud();
 hookCloud();addEventListener('nsd-cloud-ready',hookCloud);
 setTimeout(makeThumbs,1200);
 requestAnimationFrame(t=>{last=t;loop(t);});
+(function(){const L=$('loading');L.classList.add('run');setTimeout(()=>{L.classList.add('out');setTimeout(()=>{L.hidden=true;},450);},Math.max(900,1700-performance.now()));})();
 })();

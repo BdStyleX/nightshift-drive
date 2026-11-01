@@ -19,6 +19,18 @@
 </head>
 <body>
 <div id="stage">
+<div id="loading" aria-live="polite">
+  <div class="ld-top">NIGHTSHIFT <span>DRIVE</span></div>
+  <svg class="ld-car" viewBox="0 0 130 56" aria-hidden="true">
+    <path d="M6 40l2-9 14-4 14-13c3-3 7-4 12-4h30c6 0 10 2 14 6l11 11 14 3c4 1 6 4 6 8v2z" fill="#262a31" stroke="#1ec8ff" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M40 15h32l12 12H34z" fill="#14161a" stroke="#1ec8ff" stroke-width="1" opacity=".9"/>
+    <circle cx="32" cy="42" r="9" fill="#14161a" stroke="#ff7a1a" stroke-width="3"/><circle cx="102" cy="42" r="9" fill="#14161a" stroke="#ff7a1a" stroke-width="3"/>
+    <rect x="118" y="30" width="9" height="4" fill="#ffc83a"/>
+  </svg>
+  <div class="ld-road"><i></i></div>
+  <div class="ld-bar"><i></i></div>
+  <div class="ld-txt" id="loadTxt">Starting engine</div>
+</div>
 <canvas id="gl" aria-label="3D game view"></canvas>
 
 <div id="ui">
@@ -49,10 +61,15 @@
       </div>
     </aside>
 
+    <button class="fab fab-r" id="bStation" aria-label="Open garage and dealership" aria-expanded="false" aria-controls="stationPanel">
+      <svg viewBox="0 0 48 48" width="62%" height="62%" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 31v-6l5-9h18l7 9h6v6"/><path d="M13 16l-3 9h26"/><circle cx="14" cy="32" r="4" fill="#14161a"/><circle cx="34" cy="32" r="4" fill="#14161a"/><path d="M36 6l6 6-5 5-2-2-3 3-3-3 3-3z" stroke-width="2.4"/></svg>
+    </button>
+
     <div class="center">
       <h1 class="title">NIGHTSHIFT <span>DRIVE</span></h1>
       <div class="sub" id="mSub"></div>
       <div class="spacer"></div>
+      <div class="hint">Drag to turn the car</div>
       <button class="play" id="bPlay" aria-label="Play"><span>PLAY</span></button>
       <div class="row3">
         <button class="btn" id="bGarage">Garage</button>
@@ -61,8 +78,8 @@
       </div>
     </div>
 
-    <aside class="panel" aria-label="Station and dealership">
-      <div class="ph">Station</div>
+    <aside class="panel drawer station" id="stationPanel" aria-label="Station and dealership" hidden>
+      <div class="ph">Station<button class="xbtn" id="bStClose" aria-label="Close station">&times;</button></div>
       <div class="tabs" role="tablist">
         <button id="tabCustom" role="tab" class="on">1. Custom</button>
         <button id="tabDealer" role="tab">2. Dealership</button>
@@ -79,6 +96,24 @@
   <section id="settings" class="screen modal" hidden>
     <div class="sheet wide">
       <h3>Settings</h3>
+      <div class="ctlwrap">
+        <div class="lbl">Drive controls <span>pick one, then press OK</span></div>
+        <div class="cpick" id="ctlPick" role="radiogroup" aria-label="Drive controls">
+          <button class="cp" data-v="wheel" role="radio" aria-checked="false">
+            <svg viewBox="-50 -50 100 100" aria-hidden="true"><circle r="40" fill="none" stroke="currentColor" stroke-width="9"/><path d="M-40 4h28l8 14h8l8-14h28M0 -4v-36" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/><circle r="9" fill="currentColor"/></svg>
+            <b>Steering wheel</b><small>Turn the wheel on screen with your thumb</small>
+          </button>
+          <button class="cp" data-v="buttons" role="radio" aria-checked="false">
+            <svg viewBox="0 0 100 60" aria-hidden="true"><rect x="3" y="8" width="42" height="44" fill="none" stroke="currentColor" stroke-width="5"/><rect x="55" y="8" width="42" height="44" fill="none" stroke="currentColor" stroke-width="5"/><path d="M30 18l-12 12 12 12M70 18l12 12-12 12" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="square"/></svg>
+            <b>Arrow buttons</b><small>Tap left or right, like classic car games</small>
+          </button>
+          <button class="cp" data-v="tilt" role="radio" aria-checked="false">
+            <svg viewBox="-50 -40 100 80" aria-hidden="true"><g transform="rotate(-24)"><rect x="-30" y="-15" width="60" height="30" rx="5" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="24" cy="0" r="2.6" fill="currentColor"/></g><path d="M-44 8a46 46 0 0 0 20 28M44 -8a46 46 0 0 0-20-28" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+            <b>Tilt phone</b><small>Tilt right to go right, left to go left</small>
+          </button>
+        </div>
+        <div class="note" id="ctlNote"></div>
+      </div>
       <div class="cols2">
         <div class="col">
           <div><div class="lbl">Sound</div><div class="seg" id="segSound"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
@@ -87,7 +122,6 @@
         </div>
         <div class="col">
           <div><div class="lbl">Touch controls</div><div class="seg" id="segT"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
-          <div><div class="lbl">Steering mode</div><div class="seg" id="segS"><button data-v="wheel">Wheel</button><button data-v="tilt">Tilt</button><button data-v="buttons">Arrows</button></div></div>
           <div><div class="lbl">Flip screen (portrait phones)</div><div class="seg" id="segF"><button data-v="0">Off</button><button data-v="1">On</button></div></div>
           <div><div class="lbl">Steering response <span id="sensVal">100%</span></div><input type="range" id="sens" min="60" max="140" step="5" value="100" aria-label="Steering response"></div>
         </div>
@@ -96,7 +130,7 @@
         <button class="btn" id="bDemo" hidden>+10,000 test credits</button>
         <button class="btn" id="bSignOut" hidden>Sign out</button>
       </div>
-      <button class="btn primary" id="sDone">Done</button>
+      <button class="btn primary" id="sDone">OK</button>
     </div>
   </section>
 
