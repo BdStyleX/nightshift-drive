@@ -46,7 +46,7 @@
 
 **টেস্ট বিল্ড:** `config.js`-এ `demo:true` থাকায় Settings-এ "+10,000 test credits" বোতাম আছে, যাতে টেস্টাররা সব গাড়ি চালিয়ে দেখতে পারে। Play Store-এর আগে `demo:false` করুন।
 
-**ফাইল বদলালে:** রিপোতে ফাইলটি খুলে পেন্সিল আইকন → বদলান → Commit। বড় বদলে `sw.js`-এর `nsd-v4` বাড়িয়ে `nsd-v5` করুন, নইলে পুরনো ক্যাশ দেখাতে পারে।
+**ফাইল বদলালে:** রিপোতে ফাইলটি খুলে পেন্সিল আইকন → বদলান → Commit। বড় বদলে `sw.js`-এর `nsd-v6` বাড়িয়ে `nsd-v7` করুন, নইলে পুরনো ক্যাশ দেখাতে পারে।
 
 **পরে Play Store-এ:** `assetlinks.json` ডোমেইনের মূলে (`https://bdstylex.github.io/.well-known/assetlinks.json`) থাকতে হয়, তাই ওটা `BdStyleX.github.io` রিপোতে `.well-known/assetlinks.json` নামে রাখবেন। সাথে ঐ রিপোতে একটা খালি `.nojekyll` ফাইল দিন।
 

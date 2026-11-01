@@ -1,5 +1,5 @@
 /* Offline cache. Bump VERSION whenever you upload new game files. */
-const VERSION = 'nsd-v4';
+const VERSION = 'nsd-v6';
 const SHELL = ['./', 'index.html', 'style.css', 'game.js', 'config.js', 'firebase-config.js', 'firebase-sync.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'privacy.html'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting()));
